@@ -24,7 +24,27 @@ const ALLOWED_TRANSITIONS = {
   returned: [],
 };
 
+const MAX_PAGE_SIZE = 100;
+const SORTABLE_FIELDS = ["createdAt", "totalPrice", "status", "paymentStatus"];
+
 const round = (value) => Math.round(value * 100) / 100;
+
+const getPagination = (query) => {
+  const page = Number(query.page) > 0 ? Number(query.page) : 1;
+  const requested = Number(query.limit) > 0 ? Number(query.limit) : 10;
+  return { page, limit: Math.min(requested, MAX_PAGE_SIZE) };
+};
+
+const getSort = (sort) => {
+  if (!sort) {
+    return { createdAt: -1 };
+  }
+  const field = sort.startsWith("-") ? sort.slice(1) : sort;
+  if (!SORTABLE_FIELDS.includes(field)) {
+    return null;
+  }
+  return { [field]: sort.startsWith("-") ? -1 : 1 };
+};
 
 const getCouponDiscount = (cart, subtotal) => {
   const coupon = cart.coupon;
@@ -198,8 +218,7 @@ const stripeWebhook = asyncHandler(async (req, res) => {
 
 const getMyOrders = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const page = Number(req.query.page) > 0 ? Number(req.query.page) : 1;
-  const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 10;
+  const { page, limit } = getPagination(req.query);
   const filter = { userId };
 
   if (req.query.status) {
@@ -291,8 +310,7 @@ const cancelMyOrder = asyncHandler(async (req, res) => {
 });
 
 const getAllOrders = asyncHandler(async (req, res) => {
-  const page = Number(req.query.page) > 0 ? Number(req.query.page) : 1;
-  const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 10;
+  const { page, limit } = getPagination(req.query);
   const filter = {};
 
   if (req.query.status) {
@@ -317,7 +335,10 @@ const getAllOrders = asyncHandler(async (req, res) => {
     }
   }
 
-  const sort = req.query.sort || "-createdAt";
+  const sort = getSort(req.query.sort);
+  if (!sort) {
+    return res.status(400).send("Invalid sort field");
+  }
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
@@ -420,8 +441,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
 });
 
 const getAllCarts = asyncHandler(async (req, res) => {
-  const page = Number(req.query.page) > 0 ? Number(req.query.page) : 1;
-  const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 10;
+  const { page, limit } = getPagination(req.query);
   const filter = { "items.0": { $exists: true } };
 
   const [carts, total] = await Promise.all([
