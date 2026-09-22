@@ -419,6 +419,48 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   });
 });
 
+const getAllCarts = asyncHandler(async (req, res) => {
+  const page = Number(req.query.page) > 0 ? Number(req.query.page) : 1;
+  const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 10;
+  const filter = { "items.0": { $exists: true } };
+
+  const [carts, total] = await Promise.all([
+    Cart.find(filter)
+      .populate({ path: "userId", select: "name email" })
+      .populate({ path: "items.productId", select: "name price img stock" })
+      .sort({ updatedAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select("-__v"),
+    Cart.countDocuments(filter),
+  ]);
+
+  const activeCarts = carts.map((cart) => {
+    const cartObject = cart.toObject();
+    cartObject.subtotal = round(
+      cart.items.reduce(
+        (sum, item) => sum + (item.productId?.price || 0) * item.quantity,
+        0,
+      ),
+    );
+    cartObject.itemCount = cart.items.reduce(
+      (sum, item) => sum + item.quantity,
+      0,
+    );
+    return cartObject;
+  });
+
+  res.status(200).send({
+    Carts: activeCarts,
+    Pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    },
+  });
+});
+
 const getDashboard = asyncHandler(async (req, res) => {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -532,5 +574,6 @@ module.exports = {
   getAllOrders,
   getOrderById,
   updateOrderStatus,
+  getAllCarts,
   getDashboard,
 };
