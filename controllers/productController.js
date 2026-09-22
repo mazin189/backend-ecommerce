@@ -28,6 +28,7 @@ const addProduct = asyncHandler(async (req, res) => {
       category: req.body.category,
       description: req.body.description,
       price: req.body.price,
+      stock: req.body.stock,
       img: result.secure_url,
     });
     const productObject = product.toObject();

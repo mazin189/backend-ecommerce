@@ -11,6 +11,7 @@ const cartRouter = require("./routers/cart.route.js");
 const authRouter = require("./routers/auth.route.js");
 const userRouter = require("./routers/user.route.js");
 const categoryRouter = require("./routers/category.route.js");
+const orderRouter = require("./routers/order.route.js");
 
 const corsOptions = {
  origin: "http://localhost:5000",
@@ -19,7 +20,12 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
 }
 
-app.use(express.json());
+app.use((req, res, next) => {
+  if (req.originalUrl === "/orders/webhook") {
+    return next();
+  }
+  express.json()(req, res, next);
+});
 app.use(cookieParser());
 app.use(cors(corsOptions))
 app.use(morgan("dev"))
@@ -28,6 +34,7 @@ app.use(cartRouter);
 app.use(authRouter);
 app.use(userRouter);
 app.use(categoryRouter);
+app.use(orderRouter);
 
 
 
