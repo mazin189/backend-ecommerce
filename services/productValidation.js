@@ -5,6 +5,7 @@ const productValidation = Joi.object({
   img: Joi.string().optional(),
   price: Joi.number().required().min(0),
   rating: Joi.number().optional().min(0).max(5),
+  stock: Joi.number().optional().integer().min(0),
   description: Joi.string().required(),
   category: Joi.string().required(),
   alt: Joi.string().optional(),
