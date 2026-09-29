@@ -7,9 +7,17 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    username: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      lowercase: true,
+    },
     password: {
       required: true,
       type: String,
+      select: false,
     },
     email: {
       required: true,
@@ -20,6 +28,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
+      enum: ["user", "admin"],
       default: "user",
     },
     image: {
@@ -35,6 +44,26 @@ userSchema.pre("save", async function () {
     return;
   }
   this.password = await bcrypt.hash(this.password, 8);
+});
+
+userSchema.methods.comparePassword = function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+userSchema.set("toJSON", {
+  transform: (doc, ret) => {
+    delete ret.password;
+    delete ret.__v;
+    return ret;
+  },
+});
+
+userSchema.set("toObject", {
+  transform: (doc, ret) => {
+    delete ret.password;
+    delete ret.__v;
+    return ret;
+  },
 });
 
 userSchema.pre("findOneAndUpdate" , async function () {
