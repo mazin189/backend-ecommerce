@@ -11,7 +11,7 @@ const {
   updateOrderStatus,
   getDashboard,
 } = require("../controllers/orderController.js");
-const { auth, isAdmin } = require("../middlewares/auth.js");
+const { protect, allowedTo } = require("../middlewares/auth.js");
 const validate = require("../middlewares/validate.js");
 const {
   createOrderValidation,
@@ -22,16 +22,16 @@ router
   .route("/orders/webhook")
   .post(express.raw({ type: "application/json" }), stripeWebhook);
 
-router.route("/orders").post(auth, validate(createOrderValidation), createOrder);
-router.route("/orders/my").get(auth, getMyOrders);
-router.route("/orders/my/:id").get(auth, getMyOrderById);
-router.route("/orders/my/:id/cancel").patch(auth, cancelMyOrder);
+router.route("/orders").post(protect, validate(createOrderValidation), createOrder);
+router.route("/orders/my").get(protect, getMyOrders);
+router.route("/orders/my/:id").get(protect, getMyOrderById);
+router.route("/orders/my/:id/cancel").patch(protect, cancelMyOrder);
 
-router.route("/orders/admin/dashboard").get(auth, isAdmin, getDashboard);
-router.route("/orders/admin").get(auth, isAdmin, getAllOrders);
-router.route("/orders/admin/:id").get(auth, isAdmin, getOrderById);
+router.route("/orders/admin/dashboard").get(protect, allowedTo("admin"), getDashboard);
+router.route("/orders/admin").get(protect, allowedTo("admin"), getAllOrders);
+router.route("/orders/admin/:id").get(protect, allowedTo("admin"), getOrderById);
 router
   .route("/orders/admin/:id/status")
-  .patch(auth, isAdmin, validate(updateOrderStatusValidation), updateOrderStatus);
+  .patch(protect, allowedTo("admin"), validate(updateOrderStatusValidation), updateOrderStatus);
 
 module.exports = router;

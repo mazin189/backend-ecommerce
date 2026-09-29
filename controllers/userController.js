@@ -35,6 +35,7 @@ const getUserById = asyncHandler (async(req, res) => {
 
 const updateProfileData = asyncHandler (async(req, res) => {
     const updates = {...req.body}
+    delete updates.role
     const id = req.user._id;
      if(req.file){
     const result = await uploadImage(req.file.buffer, "Users")

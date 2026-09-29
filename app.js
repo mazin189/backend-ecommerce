@@ -31,6 +31,7 @@ app.use(cors(corsOptions))
 app.use(morgan("dev"))
 app.use(productRouter);
 app.use(cartRouter);
+app.use("/api/auth", authRouter);
 app.use(authRouter);
 app.use(userRouter);
 app.use(categoryRouter);

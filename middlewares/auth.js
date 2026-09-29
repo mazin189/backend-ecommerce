@@ -1,34 +1,59 @@
-const jwt = require("jsonwebtoken");
+const asyncHandler = require("express-async-handler");
 const User = require("../models/userModel.js");
+const {
+  ACCESS_TOKEN_COOKIE,
+  verifyToken,
+} = require("../services/token.service.js");
 
-const auth = async(req, res, next) => {
+const extractToken = (req) => {
+  const header = req.headers.authorization;
+  if (header && header.startsWith("Bearer ")) {
+    return header.split(" ")[1];
+  }
+  if (req.cookies && req.cookies[ACCESS_TOKEN_COOKIE]) {
+    return req.cookies[ACCESS_TOKEN_COOKIE];
+  }
+  return null;
+};
+
+const protect = asyncHandler(async (req, res, next) => {
+  const token = extractToken(req);
+  if (!token) {
+    return res.status(401).send({ error: "Not authorized, no token" });
+  }
+
+  let decoded;
   try {
-    const token = req.cookies.access_token
-    if (!token) {
-      return res.status(401).send({ error: "No token provided" });
-    }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findOne({ _id: decoded._id });
-    if (!user) {
-      return res.status(404).send({ error: "User not found" });
-    }
-    req.user = user;
-    req.decoded = decoded;
-
-    next();
+    decoded = verifyToken(token);
   } catch (e) {
-    res.status(401).send({ error: "Invalid token" });
+    return res.status(401).send({ error: "Not authorized, token failed" });
   }
-};
 
-const isAdmin = (req, res, next) => {
-  if (req.user.role !== "admin") {
-    return res.status(403).send("Admins only");
+  const user = await User.findById(decoded.id || decoded._id);
+  if (!user) {
+    return res.status(401).send({ error: "User no longer exists" });
   }
+
+  req.user = user;
+  req.decoded = decoded;
   next();
-};
+});
+
+const allowedTo =
+  (...roles) =>
+  (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).send({ error: "Not authorized, no token" });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res
+        .status(403)
+        .send({ error: "Forbidden: insufficient permissions" });
+    }
+    next();
+  };
 
 module.exports = {
-  auth,
-  isAdmin,
+  protect,
+  allowedTo,
 };

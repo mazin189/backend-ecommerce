@@ -5,9 +5,9 @@ const {
   getCart,
   deleteFromCart,
 } = require("../controllers/cartController.js");
-const { auth } = require("../middlewares/auth.js");
+const { protect } = require("../middlewares/auth.js");
 
-router.route("/cart").get(auth, getCart).post(auth, addToCart);
-router.route("/cart/:id").delete(auth, deleteFromCart);
+router.route("/cart").get(protect, getCart).post(protect, addToCart);
+router.route("/cart/:id").delete(protect, deleteFromCart);
 
 module.exports = router;

@@ -7,7 +7,7 @@ const {
   updateProduct,
   deleteProduct,
 } = require("../controllers/productController.js");
-const { auth, isAdmin } = require("../middlewares/auth.js");
+const { protect, allowedTo } = require("../middlewares/auth.js");
 const productValidation = require("../services/productValidation.js");
 const validate = require("../middlewares/validate.js");
 const upload = require("../middlewares/upload.js");
@@ -16,8 +16,8 @@ router
   .route("/products")
   .get(getAllProducts)
   .post(
-    auth,
-    isAdmin,
+    protect,
+    allowedTo("admin"),
     upload.single("image"),
     validate(productValidation),
     addProduct,
@@ -25,7 +25,7 @@ router
 router
   .route("/products/:id")
   .get(getProductById)
-  .patch(auth, isAdmin, upload.single("image"), updateProduct)
-  .delete(auth, isAdmin, deleteProduct);
+  .patch(protect, allowedTo("admin"), upload.single("image"), updateProduct)
+  .delete(protect, allowedTo("admin"), deleteProduct);
 
 module.exports = router;
